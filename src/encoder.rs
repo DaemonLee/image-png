@@ -105,7 +105,7 @@ impl<W: Write> Writer<W> {
         Ok(self)
     }
 
-    fn set_zlib_compression_mode<O: Into<deflate::CompressionOptions>>(&mut self, options: O) {
+    pub fn set_zlib_compression_mode<O: Into<deflate::CompressionOptions>>(&mut self, options: O) {
         self.zlib_options = options.into();
     }
 

@@ -84,11 +84,12 @@ impl<W: Write> Parameter<Encoder<W>> for BitDepth {
 pub struct Writer<W: Write> {
     w: W,
     info: Info,
+    zlib_options: deflate::CompressionOptions,
 }
 
 impl<W: Write> Writer<W> {
     fn new(w: W, info: Info) -> Writer<W> {
-        let w = Writer { w: w, info: info };
+        let w = Writer { w: w, info: info, zlib_options: deflate::CompressionOptions::fast() };
         w
     }
 
@@ -102,6 +103,10 @@ impl<W: Write> Writer<W> {
         data[12] = if self.info.interlaced { 1 } else { 0 };
         try!(self.write_chunk(chunk::IHDR, &data));
         Ok(self)
+    }
+
+    fn set_zlib_compression_mode<O: Into<deflate::CompressionOptions>>(&mut self, options: O) {
+        self.zlib_options = options.into();
     }
 
     pub fn write_chunk(&mut self, name: [u8; 4], data: &[u8]) -> Result<()> {
@@ -125,7 +130,7 @@ impl<W: Write> Writer<W> {
         if data.len() < data_size || data_size == 0 {
             return Err(EncodingError::Format("not enough image data provided".into()));
         }
-        let mut zlib = deflate::write::ZlibEncoder::new(Vec::new(), deflate::Compression::Fast);
+        let mut zlib = deflate::write::ZlibEncoder::new(Vec::new(), self.zlib_options);
         let filter_method = FilterType::Sub;
         for line in data.chunks(in_len) {
             ::utils::copy_memory(&line, &mut current);

@@ -166,7 +166,6 @@ fn roundtrip() {
     let mut out = Vec::new();
     {
         let mut encoder = Encoder::new(&mut out, info.width, info.height).write_header().unwrap();
-        encoder.set_png_filter(FilterType::Up);
         encoder.write_image_data(&buf).unwrap();
     }
     // Decode encoded decoded image

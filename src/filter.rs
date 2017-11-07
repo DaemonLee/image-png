@@ -11,7 +11,7 @@ pub enum FilterType {
     Paeth = 4
 }
 
- impl FilterType {  
+impl FilterType {
     /// u8 -> Self. Temporary solution until Rust provides a canonical one.
     pub fn from_u8(n: u8) -> Option<FilterType> {
         match n {

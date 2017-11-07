@@ -51,7 +51,7 @@ mod crc;
 mod decoder;
 #[cfg(feature = "png-encoding")]
 mod encoder;
-mod filter;
+pub mod filter;
 mod traits;
 mod common;
 mod utils;

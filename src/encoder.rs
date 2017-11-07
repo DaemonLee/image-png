@@ -85,11 +85,12 @@ pub struct Writer<W: Write> {
     w: W,
     info: Info,
     zlib_options: deflate::CompressionOptions,
+    filter_method: FilterType
 }
 
 impl<W: Write> Writer<W> {
     fn new(w: W, info: Info) -> Writer<W> {
-        let w = Writer { w: w, info: info, zlib_options: deflate::CompressionOptions::fast() };
+        let w = Writer { w: w, info: info, zlib_options: deflate::CompressionOptions::fast(), filter_method: FilterType::Sub };
         w
     }
 
@@ -108,6 +109,11 @@ impl<W: Write> Writer<W> {
     pub fn set_zlib_compression_mode<O: Into<deflate::CompressionOptions>>(&mut self, options: O) {
         self.zlib_options = options.into();
     }
+
+    pub fn set_png_filter<O: Into<FilterType>>(&mut self, options: O) {
+         self.filter_method = options.into();
+    }
+
 
     pub fn write_chunk(&mut self, name: [u8; 4], data: &[u8]) -> Result<()> {
         try!(self.w.write_be(data.len() as u32));
@@ -131,11 +137,10 @@ impl<W: Write> Writer<W> {
             return Err(EncodingError::Format("not enough image data provided".into()));
         }
         let mut zlib = deflate::write::ZlibEncoder::new(Vec::new(), self.zlib_options);
-        let filter_method = FilterType::Sub;
         for line in data.chunks(in_len) {
             ::utils::copy_memory(&line, &mut current);
-            try!(zlib.write_all(&[filter_method as u8]));
-            filter(filter_method, bpp, &prev, &mut current);
+            try!(zlib.write_all(&[self.filter_method as u8]));
+            filter(self.filter_method, bpp, &prev, &mut current);
             try!(zlib.write_all(&current));
             ::utils::copy_memory(&current, &mut prev);
         }
@@ -161,6 +166,7 @@ fn roundtrip() {
     let mut out = Vec::new();
     {
         let mut encoder = Encoder::new(&mut out, info.width, info.height).write_header().unwrap();
+        encoder.set_png_filter(FilterType::Up);
         encoder.write_image_data(&buf).unwrap();
     }
     // Decode encoded decoded image
